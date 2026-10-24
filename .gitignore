@@ -34,9 +34,7 @@ htmlcov/
 .ipynb_checkpoints/
 
 # ===== ML / Data =====
-data/
 datamart/
-*.csv
 *.parquet
 *.feather
 *.h5

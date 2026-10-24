@@ -8,4 +8,4 @@ scipy==1.15.1
 scikit-learn==1.6.1
 pyspark==3.5.5
 xgboost==3.0.0
-shap==0.53.0
+shap==0.51.0
