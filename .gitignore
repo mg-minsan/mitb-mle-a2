@@ -1,0 +1,101 @@
+# ===== Python =====
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+build/
+dist/
+*.egg-info/
+.eggs/
+pip-wheel-metadata/
+
+# Virtual environments
+.venv/
+venv/
+env/
+.python-version
+
+# Testing / tooling caches
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+.tox/
+.nox/
+
+# Environment / secrets
+.env
+.env.*
+!.env.example
+
+# Jupyter
+.ipynb_checkpoints/
+
+# ===== ML / Data =====
+data/
+datamart/
+*.csv
+*.parquet
+*.feather
+*.h5
+*.hdf5
+*.zip
+*.gz
+
+# Models & artifacts
+models/
+*.pkl
+*.pickle
+*.joblib
+*.pt
+*.pth
+*.ckpt
+*.onnx
+*.safetensors
+
+# Experiment tracking
+mlruns/
+mlartifacts/
+wandb/
+lightning_logs/
+outputs/
+logs/
+.dvc/cache/
+
+# ===== macOS =====
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100
+.Trashes
+
+# ===== Editors =====
+.vscode/
+.idea/
+
+# ===== Claude Code =====
+.claude/
+CLAUDE.md
+AGENT.md
+CLAUDE.local.md
+
+# ===== Airflow =====
+airflow.db
+airflow.cfg
+airflow-webserver.pid
+standalone_admin_password.txt
+webserver_config.py
+airflow_home/
+plugins/__pycache__/
+dags/__pycache__/
+
+# Monthly pipeline outputs
+datamart_monthly/
+
+# Local MLflow tracking database
+mlflow.db
+mlflow.db-shm
+mlflow.db-wal

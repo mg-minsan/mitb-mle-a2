@@ -1,0 +1,28 @@
+FROM apache/airflow:2.8.4-python3.11
+
+USER root
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Install Java 17, procps and bash
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+      openjdk-17-jdk-headless \
+      procps \
+      bash && \
+    rm -rf /var/lib/apt/lists/*
+
+# Architecture-independent Java path
+RUN ln -s "$(dirname "$(dirname "$(readlink -f "$(command -v java)")")")" /opt/java
+
+ENV JAVA_HOME=/opt/java
+ENV PATH="${JAVA_HOME}/bin:${PATH}"
+
+WORKDIR /app
+
+# Ensure airflow can read requirements
+COPY --chown=airflow:root --chmod=644 requirements.txt ./
+
+USER airflow
+
+RUN pip install --no-cache-dir -r requirements.txt

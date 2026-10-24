@@ -1,0 +1,57 @@
+"""Run scripts/model_train.py with an explicit --snapshotdate argument.
+
+The monthly parent triggers this DAG in January/July with an explicit cutoff.
+Manual triggers default to V1, January 2024; optionally supply
+    {"snapshotdate": "2024-07-01"}
+Legacy processing_date configuration is still accepted. This DAG has no schedule;
+the parent waits for successful training before inference.
+"""
+
+from datetime import datetime, timedelta
+
+from airflow import DAG
+from airflow.models.param import Param
+from airflow.operators.bash import BashOperator
+
+
+with DAG(
+    dag_id="model_training_dag",
+    description="Train expanding-history XGBoost and save dated model and PSI reference",
+    schedule=None,
+    start_date=datetime(2024, 1, 1),
+    catchup=False,
+    max_active_runs=1,
+    is_paused_upon_creation=False,
+    params={
+        "snapshotdate": Param(
+            "2024-01-01",
+            type="string",
+            format="date",
+            pattern=r"^\d{4}-\d{2}-01$",
+            title="Training snapshot date",
+            description="Historical cutoff (first day of a month), not today's run date.",
+        ),
+    },
+    default_args={
+        "owner": "airflow",
+        "depends_on_past": False,
+        "retries": 1,
+        "retry_delay": timedelta(minutes=5),
+    },
+) as dag:
+    train_model = BashOperator(
+        task_id="train_model",
+        bash_command=(
+            'cd /app && '
+            'PYTHONPATH=/app python3 -u scripts/model_train.py '
+            '--snapshotdate "$TRAINING_DATE"'
+        ),
+        env={
+            "TRAINING_DATE": (
+                "{{ dag_run.conf.get('snapshotdate', "
+                "dag_run.conf.get('processing_date', params.snapshotdate)) }}"
+            ),
+            "PYTHONUNBUFFERED": "1",
+        },
+        append_env=True,
+    )
