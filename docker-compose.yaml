@@ -1,11 +1,11 @@
-name: mle-assignment-1
+name: mle-assignment-2
 
 services:
   jupyter:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: mle-assignment-1-jupyter
+    container_name: mle-assignment-2-jupyter
     ports:
       - "8888:8888"
     volumes:
