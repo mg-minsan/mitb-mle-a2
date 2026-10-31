@@ -81,20 +81,11 @@ def validate_model_ready(ds, dag_run, model_bank="/app/model_bank", session=None
     cutoff = model_training_date(ds)
     logical_date = cutoff.replace(tzinfo=timezone.utc)
 
-    def training_task(dag_id):
-        return session.query(TaskInstance).filter(
-            TaskInstance.dag_id == dag_id,
-            TaskInstance.task_id == "train_model",
-            TaskInstance.execution_date == logical_date,
-        ).one_or_none()
-
-    training = training_task(dag_run.dag_id)
-    if training is None:
-        # Migration only: the retired DAG's completed runs remain valid proof.
-        # Never fall back when an inline task exists but failed/is incomplete.
-        training = training_task("model_training_dag")
-        if training is not None and training.dag_run.conf.get("snapshotdate") != cutoff.strftime("%Y-%m-%d"):
-            raise ValueError("Legacy training cutoff does not match the selected version")
+    training = session.query(TaskInstance).filter(
+        TaskInstance.dag_id == dag_run.dag_id,
+        TaskInstance.task_id == "train_model",
+        TaskInstance.execution_date == logical_date,
+    ).one_or_none()
     if training is None or training.state != "success":
         raise ValueError(f"Successful training is required for {cutoff:%Y-%m-%d}; replay that version's training run first")
 
@@ -124,7 +115,7 @@ with DAG(
     end_date=datetime(2024, 12, 1),
     catchup=True,
     max_active_runs=1,
-    is_paused_upon_creation=True,
+    is_paused_upon_creation=False,  # backfill starts as soon as docker-compose up
     user_defined_macros={
         "model_name_for_date": model_name_for_date,
         "performance_cohort_date": performance_cohort_date,
@@ -308,6 +299,16 @@ with DAG(
         ),
     )
 
+    business_predictions = BashOperator(
+        task_id="business_predictions",
+        bash_command=(
+            'cd /app && '
+            'PYTHONPATH=/app python3 -u scripts/business_predictions.py '
+            '--snapshotdate "{{ ds }}" '
+            '--model "{{ model_name_for_date(ds) }}"'
+        ),
+    )
+
     # Independent of the current model: evaluate the cohort whose six-month
     # outcomes have just arrived, even if current training/inference fails.
     check_performance_period = ShortCircuitOperator(
@@ -331,3 +332,4 @@ with DAG(
     check_retraining >> [train_model, reuse_existing_model]
     [train_model, reuse_existing_model] >> model_ready
     model_ready >> model_inference_start >> model_psi_monitoring
+    model_inference_start >> business_predictions
